@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Yichun Bai"/>
+    <link rel="stylesheet" href="./style.css">
+    <title>Event List</title>
+  </head>
+
+  <body>
+    <button id="add-new-button">Add New Event</button>
+
+    <form id="event-form">
+        <table>
+            <thead>
+                <th>Event</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Actions</th>
+            </thead>
+
+            <tbody id="event-table"></tbody>
+        </table>
+    </form>
+
+    <script src="./eventlistAPI.js"></script>
+    <script src="./eventlist.js"></script>
+  </body>
+
+</html>
