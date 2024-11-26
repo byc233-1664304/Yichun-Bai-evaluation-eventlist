@@ -4,7 +4,7 @@ function validateInputs(eventName, startDate, endDate) {
         return false;
     }
 
-    if(new Date(startDate) > new Date(endDate)) {
+    if(new Date(endDate) < new Date(startDate)) {
         alert("Input Not Valid!");
         return false;
     }
@@ -12,9 +12,10 @@ function validateInputs(eventName, startDate, endDate) {
     return true;
 }
 
-function createEventElem(event, mode = "view") {
+function createEventElem(event, eventList, mode = "view") {
     // create a row of the event element
     const eventItemElem = document.createElement("tr");
+    eventItemElem.id = event.id;
     
     // event name
     const eventElem = document.createElement("td");
@@ -58,7 +59,7 @@ function createEventElem(event, mode = "view") {
     const editButton = document.createElement("button");
     editButton.innerHTML = `<svg focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="EditIcon" aria-label="fontSize small"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>`;
     editButton.addEventListener("click", () => {
-        const updatedRow = createEventElem(event, "edit");
+        const updatedRow = createEventElem(event, eventList, "edit");
         eventItemElem.replaceWith(updatedRow);
     });
 
@@ -89,7 +90,12 @@ function createEventElem(event, mode = "view") {
 
         const savedEvent = await eventAPI.editEvent(event.id, updatedEvent);
         event = savedEvent;
-        const updatedRow = createEventElem(savedEvent, "view");
+        const index = eventList.findIndex(e => e.id === event.id);
+        if(index !== -1) {
+            eventList[index] = savedEvent;
+        }
+
+        const updatedRow = createEventElem(savedEvent, eventList, "view");
         eventItemElem.replaceWith(updatedRow);
     });
 
@@ -101,7 +107,7 @@ function createEventElem(event, mode = "view") {
         if(mode === "add") {
             eventItemElem.remove();
         }else if(mode === "edit"){
-            const originalRow = createEventElem(event, "view");
+            const originalRow = createEventElem(event, eventList, "view");
             eventItemElem.replaceWith(originalRow);
         }
      });
@@ -123,7 +129,9 @@ function createEventElem(event, mode = "view") {
         }
 
         const savedEvent = await eventAPI.postEvent(newEvent);
-        const updatedRow = createEventElem(savedEvent, "view");
+        eventList.push(savedEvent);
+
+        const updatedRow = createEventElem(savedEvent, eventList, "view");
         eventItemElem.replaceWith(updatedRow);
     });
 
@@ -148,18 +156,20 @@ function createEventElem(event, mode = "view") {
     return eventItemElem;
 }
 
-function renderEvents(events) {
+function renderEvents(events, eventList) {
     const eventTableElem = document.getElementById("event-table");
     
     for(const event of events) {
-        const eventElem = createEventElem(event);
+        const eventElem = createEventElem(event, eventList);
         eventTableElem.appendChild(eventElem);
     }
 }
 
 (function initApp() {
+    let eventList = [];
     eventAPI.getEvents().then((events) => {
-        renderEvents(events);
+        eventList = events;
+        renderEvents(events, eventList);
     });
 
     const addNewElem = document.getElementById("add-new-button");
@@ -169,7 +179,20 @@ function renderEvents(events) {
             startDate: "",
             endDate: ""
         }
-        const newEventRow = createEventElem(newEvent, "add");
+        const newEventRow = createEventElem(newEvent, eventList, "add");
         document.getElementById("event-table").appendChild(newEventRow);
+    });
+
+    const removeExpiredElem = document.getElementById("remove-expired");
+    removeExpiredElem.addEventListener("click", async () => {
+        for(let i = 0; i < eventList.length; i++) {
+            let e = eventList[i];
+            let end = e.endDate;
+            if(new Date(end) < new Date()) {
+                await eventAPI.deleteEvent(e.id);
+                document.getElementById(e.id).remove();
+                eventList.splice(i, 1);
+            }
+        }
     });
 })();
